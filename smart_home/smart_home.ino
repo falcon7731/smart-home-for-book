@@ -3,7 +3,7 @@
 #include <LiquidCrystal_I2C.h>
 // Smart garden pins
 int pump_pin_number = 13;
-int soil_water_level_pin = 12;
+int soil_water_level_pin = A3;
 int fan_pin_number = 11;
 int LM35_pin_number = A0;
 int UltraSonic_Echo_pin_number = 10;
@@ -18,7 +18,13 @@ int Scl_pin_numberr = A5;
 //General variables
 LiquidCrystal_I2C lcd(0x27, 16,2);
 float Temperature_C = 0.00;
-bool soil_water_level = LOW;
+int soil_water_level = 0;
+bool is_soil_dry = false;
+
+
+//controll variables
+int thresholdValue = 800;
+
 void setup() {
   //setting up pinmodes
   pinMode(pump_pin_number , OUTPUT);
@@ -53,6 +59,20 @@ void Get_temprature() {
   Temperature_C = cel;
 }
 
-void soil_status(){
+void Get_soil_status(){
+  int soil_water_level = analogRead(soil_water_level_pin);
+  Serial.print(soil_water_level);
+  if(soil_water_level < thresholdValue){
+    Serial.println(" - Doesn't need watering");
+    is_soil_dry = false;
+  }
+  else {
+    Serial.println(" - Time to water your plant");
+    is_soil_dry = true;
+  }
+}
+
+
+void Fan_Controll(){
   
 }
