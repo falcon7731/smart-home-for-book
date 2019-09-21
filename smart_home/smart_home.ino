@@ -16,15 +16,17 @@ int Buzzer_pin_number = 6;
 int SDA_pin_number = A4;
 int Scl_pin_numberr = A5;
 //General variables
-LiquidCrystal_I2C lcd(0x27, 16,2);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 float Temperature_C = 0.00;
 int soil_water_level = 0;
 bool is_soil_dry = false;
-
+int fanSpeed = 0;
+int fanLCD =0;
 
 //controll variables
 int thresholdValue = 800;
-
+int max_temprature = 70; 
+int min_temprature = 30; 
 void setup() {
   //setting up pinmodes
   pinMode(pump_pin_number , OUTPUT);
@@ -59,10 +61,10 @@ void Get_temprature() {
   Temperature_C = cel;
 }
 
-void Get_soil_status(){
+void Get_soil_status() {
   int soil_water_level = analogRead(soil_water_level_pin);
   Serial.print(soil_water_level);
-  if(soil_water_level < thresholdValue){
+  if (soil_water_level < thresholdValue) {
     Serial.println(" - Doesn't need watering");
     is_soil_dry = false;
   }
@@ -73,6 +75,18 @@ void Get_soil_status(){
 }
 
 
-void Fan_Controll(){
-  
+void Fan_Controll() {
+  if (Temperature_C  < min_temprature) { // if temp is lower than minimum temp
+    fanSpeed = 0; // fan is not spinning
+    digitalWrite(fan_pin_number, LOW);
+  }
+  if (Temperature_C  > max_temprature) { // if temp is higher than maximum temp
+    fanSpeed = 255; // fan is spinning
+    digitalWrite(fan_pin_number, HIGH);
+  }
+  if((Temperature_C  >= min_temprature) && (Temperature_C <= max_temprature)) { // if temperature is higher than minimum temp
+    fanSpeed = map(Temperature_C, min_temprature, max_temprature, 32, 255); // the actual speed of fan
+    fanLCD = map(Temperature_C, min_temprature, max_temprature, 0, 100); // speed of fan to display on LCD
+    analogWrite(fan_pin_number, fanSpeed); // spin the fan at the fanSpeed speed
+  }
 }
