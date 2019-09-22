@@ -37,7 +37,7 @@ void setup() {
   pinMode(MQ5_pin_number , INPUT);
   pinMode(Buzzer_pin_number , OUTPUT);
   //starting the lcd
-  lcd.begin(16, 2); //Defining 16 columns and 2 rows of lcd display
+  lcd.begin(); //Defining 16 columns and 2 rows of lcd display
   lcd.backlight();//To Power ON the back light
   //starting serial com
   Serial.begin(9600);
@@ -46,6 +46,10 @@ void setup() {
 
 void loop() {
   //gathering all the data
+  Get_temprature();
+  Get_soil_status();
+  //controlling the envirment
+  Fan_Controll();
 
 
 }
