@@ -1,23 +1,34 @@
 //requiers libraries
 #include <Wire.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
+
 // Smart garden pins
 int pump_pin_number = 13;
 int soil_water_level_pin = A3;
 int fan_pin_number = 11;
-int LM35_pin_number = A0;
+int DS18B20_pin_number = 4;
 int UltraSonic_Echo_pin_number = 10;
 int UltraSonic_Trig_pin_number = 9;
+
 //home security pins
 int ReedSwitch_pin_number = 8;
 int MQ5_pin_number = A1;
 int Buzzer_pin_number = 6;
+int Lamp_pin_number = 7;
+int PIR_pin_number = 5;
+int Display_Toggle_Controll_pin_number = 4;
+
 //LCD Display pins
 int SDA_pin_number = A4;
 int Scl_pin_numberr = A5;
+
 //General variables
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+OneWire oneWire(DS18B20_pin_number);
+DallasTemperature Temprature_sensors(&oneWire);
 float Temperature_C = 0.00;
 int soil_water_level = 0;
 bool is_soil_dry = false;
@@ -25,6 +36,13 @@ int fanSpeed = 0;
 int fanLCD = 0;
 float water_level = 0;
 float water_volume = 0;
+int air_quality_value = 0;
+bool is_air_breathable = false;
+bool Reed_Switch_status = false;
+bool is_window_open = false;
+bool has_detected_movement = false;
+bool was_button_active = false;
+int Display_Info_Index = 0;
 //controll variables
 int thresholdValue = 800;
 int max_temprature = 70;
@@ -40,12 +58,14 @@ void setup() {
   pinMode(pump_pin_number , OUTPUT);
   pinMode(soil_water_level_pin , INPUT);
   pinMode(fan_pin_number , OUTPUT);
-  pinMode(LM35_pin_number , INPUT);
-  pinMode(ReedSwitch_pin_number , INPUT);
+  pinMode(DS18B20_pin_number , INPUT);
+  pinMode(ReedSwitch_pin_number , INPUT_PULLUP);
   pinMode(MQ5_pin_number , INPUT);
   pinMode(Buzzer_pin_number , OUTPUT);
   pinMode(UltraSonic_Trig_pin_number, OUTPUT);
   pinMode(UltraSonic_Echo_pin_number, INPUT);
+  pinMode(has_detected_movement, INPUT);
+  pinMode(Lamp_pin_number, OUTPUT);
   //starting the lcd
   lcd.begin(); //Defining 16 columns and 2 rows of lcd display
   lcd.backlight();//To Power ON the back light
@@ -58,21 +78,28 @@ void loop() {
   //gathering all the data
   Get_temprature();
   Get_soil_status();
+  Get_water_level();
+  Get_air_quality();
+  Get_Reed_Switch();
+  Get_Movement();
   //controlling the envirment
   Fan_Controll();
-
+  Pump_controll();
+  Control_Air_quality();
+  Security_Controll();
+  Lamp_Controll();
+  //Display on LCD
 
 }
 
 void Get_temprature() {
-  int val = analogRead(LM35_pin_number);
-  float mv = ( val / 1024.0) * 5000;
-  float cel = mv / 10;
-  Serial.print("TEMPRATURE = ");
-  Serial.print(cel);
-  Serial.print("*C");
-  Serial.println();
-  Temperature_C = cel;
+  Serial.print(" Requesting temperatures...");
+  Temprature_sensors.requestTemperatures(); // Send the command to get temperature readings
+  Serial.println("DONE");
+  Serial.print("Temperature is: ");
+  float temp = Temprature_sensors.getTempCByIndex(0);
+  Serial.print(temp);
+  Temperature_C = temp;
 }
 
 void Get_soil_status() {
@@ -122,5 +149,93 @@ void Get_water_level() {
   int distance = duration * 0.034 / 2;
   //calculating water height
   water_level = water_tank_max_height - distance;
-  water_volume = M_PI* pow(water_tank_radios,2)*water_level;
+  water_volume = M_PI * pow(water_tank_radios, 2) * water_level;
+}
+
+
+void Pump_controll() {
+  if (is_soil_dry) {
+    digitalWrite(pump_pin_number , HIGH);
+  } else {
+    digitalWrite(pump_pin_number , LOW);
+  }
+}
+
+void Get_air_quality() {
+  air_quality_value = analogRead(MQ5_pin_number);
+  Serial.println("air quality : " + String(air_quality_value));
+  if (air_quality_value <= 800) {
+    is_air_breathable = true;
+    Serial.println("Air is breathable");
+  }
+  else {
+    is_air_breathable = false;
+    Serial.println("Air is not breathable - gas leak dettected");
+  }
+
+}
+
+
+void Control_Air_quality() {
+  if (!is_air_breathable) {
+    tone(Buzzer_pin_number, 1000);
+    delay(2000);
+    noTone(Buzzer_pin_number);
+    delay(500);
+  }
+}
+
+void Get_Reed_Switch() {
+  Reed_Switch_status = digitalRead(ReedSwitch_pin_number);
+  if (Reed_Switch_status == LOW) {
+    is_window_open = true;
+  } else {
+    is_window_open = false;
+  }
+
+}
+
+void Security_Controll() {
+  if (!is_window_open) {
+    tone(Buzzer_pin_number, 2500);
+    delay(1000);
+    noTone(Buzzer_pin_number);
+    delay(500);
+  }
+}
+
+
+void Get_Movement() {
+  int movement_status = digitalRead(PIR_pin_number);
+  if (movement_status == HIGH) {
+    has_detected_movement = true;
+  } else {
+    has_detected_movement = false;
+  }
+}
+
+void Lamp_Controll() {
+  if (has_detected_movement) {
+    digitalWrite(Lamp_pin_number, HIGH);
+  } else {
+    digitalWrite(Lamp_pin_number, LOW);
+  }
+}
+
+void Toggle_Controll() {
+  int button_state = digitalRead(Display_Toggle_Controll_pin_number);
+  if (was_button_active == false) {
+    if (button_state == LOW) {
+      was_button_active = true;
+      Display_Info_Index += 1;
+    }
+  }
+  if (was_button_active == true) {
+    if (button_state == HIGH) {
+      was_button_active = false;
+    }
+  }
+}
+void Displayall() {
+
 }
