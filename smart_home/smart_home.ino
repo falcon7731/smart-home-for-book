@@ -34,6 +34,7 @@ int soil_water_level = 0;
 bool is_soil_dry = false;
 int fanSpeed = 0;
 int fanLCD = 0;
+bool pump_state = false;
 float water_level = 0;
 float water_volume = 0;
 int air_quality_value = 0;
@@ -43,6 +44,7 @@ bool is_window_open = false;
 bool has_detected_movement = false;
 bool was_button_active = false;
 int Display_Info_Index = 0;
+int Display_Max_Index = 6;
 //controll variables
 int thresholdValue = 800;
 int max_temprature = 70;
@@ -89,7 +91,9 @@ void loop() {
   Security_Controll();
   Lamp_Controll();
   //Display on LCD
-
+  Toggle_Controll();
+  Displayall();
+  delay(3000);
 }
 
 void Get_temprature() {
@@ -156,8 +160,10 @@ void Get_water_level() {
 void Pump_controll() {
   if (is_soil_dry) {
     digitalWrite(pump_pin_number , HIGH);
+    pump_state = true;
   } else {
     digitalWrite(pump_pin_number , LOW);
+    pump_state = false;
   }
 }
 
@@ -227,7 +233,12 @@ void Toggle_Controll() {
   if (was_button_active == false) {
     if (button_state == LOW) {
       was_button_active = true;
-      Display_Info_Index += 1;
+      //check max
+      if(Display_Info_Index >= Display_Max_Index){
+        Display_Info_Index = 0;
+      } else{
+        Display_Info_Index += 1;
+      }
     }
   }
   if (was_button_active == true) {
@@ -237,5 +248,57 @@ void Toggle_Controll() {
   }
 }
 void Displayall() {
+  switch(Display_Info_Index){
+    case 0:
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Water Level:");
+    lcd.setCursor(0,1);
+    lcd.print(String(water_level) + " cm");
+    break;
+    case 1:
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Water Volume:");
+    lcd.setCursor(0,1);
+    lcd.print(String(water_volume) + " cm^3");
+    break;
+    case 2:
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Temprature:");
+    lcd.setCursor(0,1);
+    lcd.print(String(Temperature_C) + " C");
+    break;
+    case 3:
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Fan Speed:");
+    lcd.setCursor(0,1);
+    lcd.print(String(fanLCD) + " %");
+    break;
+    case 4:
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Air quality:");
+    lcd.setCursor(0,1);
+    lcd.print(String(air_quality_value) + "");
+    break;
+    case 5:
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Window status:");
+    lcd.setCursor(0,1);
+    lcd.print(String(is_window_open) + "");
+    break;
+    case 6:
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("pump status:");
+    lcd.setCursor(0,1);
+    lcd.print(String(pump_state) + "");
+    break;
+    
+  }
 
 }
