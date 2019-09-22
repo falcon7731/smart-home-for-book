@@ -1,6 +1,7 @@
 //requiers libraries
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <math.h>
 // Smart garden pins
 int pump_pin_number = 13;
 int soil_water_level_pin = A3;
@@ -21,12 +22,19 @@ float Temperature_C = 0.00;
 int soil_water_level = 0;
 bool is_soil_dry = false;
 int fanSpeed = 0;
-int fanLCD =0;
-
+int fanLCD = 0;
+float water_level = 0;
+float water_volume = 0;
 //controll variables
 int thresholdValue = 800;
-int max_temprature = 70; 
-int min_temprature = 30; 
+int max_temprature = 70;
+int min_temprature = 30;
+int water_tank_radios = 5;
+int water_tank_max_height = 50;
+
+
+
+
 void setup() {
   //setting up pinmodes
   pinMode(pump_pin_number , OUTPUT);
@@ -36,6 +44,8 @@ void setup() {
   pinMode(ReedSwitch_pin_number , INPUT);
   pinMode(MQ5_pin_number , INPUT);
   pinMode(Buzzer_pin_number , OUTPUT);
+  pinMode(UltraSonic_Trig_pin_number, OUTPUT);
+  pinMode(UltraSonic_Echo_pin_number, INPUT);
   //starting the lcd
   lcd.begin(); //Defining 16 columns and 2 rows of lcd display
   lcd.backlight();//To Power ON the back light
@@ -88,9 +98,29 @@ void Fan_Controll() {
     fanSpeed = 255; // fan is spinning
     digitalWrite(fan_pin_number, HIGH);
   }
-  if((Temperature_C  >= min_temprature) && (Temperature_C <= max_temprature)) { // if temperature is higher than minimum temp
+  if ((Temperature_C  >= min_temprature) && (Temperature_C <= max_temprature)) { // if temperature is higher than minimum temp
     fanSpeed = map(Temperature_C, min_temprature, max_temprature, 32, 255); // the actual speed of fan
     fanLCD = map(Temperature_C, min_temprature, max_temprature, 0, 100); // speed of fan to display on LCD
     analogWrite(fan_pin_number, fanSpeed); // spin the fan at the fanSpeed speed
   }
+}
+
+
+
+void Get_water_level() {
+  long t = 0, h = 0, hp = 0;
+
+  // Transmitting pulse
+  digitalWrite(UltraSonic_Trig_pin_number, LOW);
+  delayMicroseconds(2);
+  digitalWrite(UltraSonic_Trig_pin_number, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(UltraSonic_Trig_pin_number, LOW);
+  // Waiting for pulse
+  long duration = pulseIn(UltraSonic_Echo_pin_number, HIGH);
+  // Calculating distance
+  int distance = duration * 0.034 / 2;
+  //calculating water height
+  water_level = water_tank_max_height - distance;
+  water_volume = M_PI* pow(water_tank_radios,2)*water_level;
 }
