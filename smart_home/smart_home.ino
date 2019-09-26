@@ -193,7 +193,7 @@ void Control_Air_quality() {
 
 void Get_Reed_Switch() {
   Reed_Switch_status = digitalRead(ReedSwitch_pin_number);
-  if (Reed_Switch_status == LOW) {
+  if (Reed_Switch_status == HIGH) {
     is_window_open = true;
   } else {
     is_window_open = false;
