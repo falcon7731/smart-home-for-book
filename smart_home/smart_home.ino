@@ -93,7 +93,7 @@ void loop() {
   //Display on LCD
   Toggle_Controll();
   Displayall();
-  delay(3000);
+  delay(500);
 }
 
 void Get_temprature() {
@@ -187,7 +187,6 @@ void Control_Air_quality() {
     tone(Buzzer_pin_number, 1000);
     delay(2000);
     noTone(Buzzer_pin_number);
-    delay(500);
   }
 }
 
@@ -206,7 +205,6 @@ void Security_Controll() {
     tone(Buzzer_pin_number, 2500);
     delay(1000);
     noTone(Buzzer_pin_number);
-    delay(500);
   }
 }
 
@@ -233,7 +231,6 @@ void Toggle_Controll() {
   if (was_button_active == false) {
     if (button_state == LOW) {
       was_button_active = true;
-      //check max
       if(Display_Info_Index >= Display_Max_Index){
         Display_Info_Index = 0;
       } else{
